@@ -1,35 +1,29 @@
 import random
 
-game_over = True
-new_game = True
-final_check = False
-computer_hand = []
-player_hand = []
-scores = [0, 0]
 
-
+# Function to start a new game
 def start_game():
-    global computer_hand, player_hand, game_over
-    game_over = False
     computer_hand = [random.randint(1, 12) for _ in range(2)]
     player_hand = [random.randint(1, 12) for _ in range(2)]
-    check_hands(computer_hand, player_hand, final_check)
+    final_check = False  # Ensure final_check is reset at the start of each game
+    return computer_hand, player_hand, final_check
 
 
-def draw_card():
-    global computer_hand, player_hand, final_check
-    draw = input("Draw another card? (Y/n): ")
-    if draw.lower() in ["y", "ye", "yes"]:
+# Function to handle drawing a card
+def draw_card(computer_hand, player_hand, final_check):
+    draw = input("Draw another card? (Y/n): ").strip().lower() if not final_check else ""
+    if draw in ["y", "ye", "ys", "yes", "yep", "ya", "yas", "yea", "yeah", "yuh", "yup", "si"]:
         player_hand.append(random.randint(1, 12))
-        if calculate_hand_value(computer_hand) <= 16:
-            computer_hand.append(random.randint(1, 12))
     else:
-        while calculate_hand_value(computer_hand) <= 16:
-            computer_hand.append(random.randint(1, 12))
         final_check = True
-    check_hands(computer_hand, player_hand, final_check)
+
+    while calculate_hand_value(computer_hand) <= 16:
+        computer_hand.append(random.randint(1, 12))
+
+    return computer_hand, player_hand, final_check
 
 
+# Function to calculate the value of a hand
 def calculate_hand_value(hand):
     value = 0
     num_aces = hand.count(1)
@@ -46,8 +40,8 @@ def calculate_hand_value(hand):
     return value
 
 
+# Function to check the hands of both players
 def check_hands(computer_hand, player_hand, final_check):
-    global scores, game_over
     computer_value = calculate_hand_value(computer_hand)
     player_value = calculate_hand_value(player_hand)
 
@@ -55,47 +49,67 @@ def check_hands(computer_hand, player_hand, final_check):
     print(f"\nComputer's hand: {display_computer_hand}")
     print(f"Player's hand: {player_hand}")
 
-    # Handle all final checks or immediate win-loss conditions
-    if final_check or player_value >= 21 or computer_value >= 21:
-        if computer_value == 21 and player_value == 21:
-            print("\nPush! Nobody wins.")
-        elif computer_value > 21 and player_value > 21:
-            print("\nBoth players bust! It's a draw.")
-        elif computer_value == 21 or (player_value < computer_value <= 21):
-            print("\nBlackjack or higher value! Computer wins.")
-            scores[0] += 1
-        elif player_value == 21 or (computer_value < player_value <= 21):
-            print("\nBlackjack or higher value! You won.")
-            scores[1] += 1
-        elif computer_value > 21:
-            print("\nComputer busts! You won.")
-            scores[1] += 1
-        elif player_value > 21:
-            print("\nYou bust! Computer wins.")
-            scores[0] += 1
-        else:
-            # Compare scores if no one busts or blackjacks
-            if player_value > computer_value:
-                print("\nYou have a higher hand! You won.")
-                scores[1] += 1
-            else:
-                print("\nComputer has a higher hand or it's a tie! Computer wins.")
-                scores[0] += 1
+    game_over = False
+    result = None
+    if final_check or (player_value >= 21 or computer_value >= 21):
+        result = determine_winner(computer_value, player_value)
         game_over = True
 
+    return game_over, result
 
-def show_scores(scores):
-    global new_game
-    print(f"Computer score: {scores[0]}\nPlayer score: {scores[1]}")
-    keep_playing = input("Rematch? (Y/n): ")
-    if keep_playing.lower() in ["y", "ye", "yes"]:
-        return 0
+
+# Function to determine the winner
+def determine_winner(computer_value, player_value):
+    if computer_value > 21 and player_value > 21:
+        return "Both players bust! It's a draw."
+    elif computer_value == 21 and player_value == 21:
+        return "Push! Nobody wins."
+    elif computer_value == 21:
+        return "Blackjack! Computer wins."
+    elif player_value == 21:
+        return "Blackjack! You won."
+    elif computer_value > 21:
+        return "Computer busts! You won."
+    elif player_value > 21:
+        return "You bust! Computer wins."
+    elif computer_value == player_value:
+        return "It's a push! Nobody wins."
     else:
-        new_game = False
+        if player_value > computer_value:
+            return "You have a higher hand! You won."
+        elif computer_value > player_value:
+            return "Computer has a higher hand! Computer wins."
+        else:
+            return "Push! Nobody wins."
 
 
-while new_game:
-    start_game()
-    while not game_over:
-        draw_card()
-    show_scores(scores)
+# Function to display scores
+def show_scores(scores):
+    print(f"Computer score: {scores[0]}\nPlayer score: {scores[1]}")
+    keep_playing = input("Rematch? (Y/n): ").strip().lower()
+    return keep_playing in ["y", "ye", "ys", "yes", "yep", "ya", "yas", "yea", "yeah", "yuh", "yup", "si"]
+
+
+# Main function to run the game
+def main():
+    scores = [0, 0]
+    new_game = True
+
+    while new_game:
+        computer_hand, player_hand, final_check = start_game()
+        game_over, result = check_hands(computer_hand, player_hand, final_check)
+        if not game_over:
+            while not game_over:
+                computer_hand, player_hand, final_check = draw_card(computer_hand, player_hand, final_check)
+                game_over, result = check_hands(computer_hand, player_hand, final_check)
+        print(f"\n{result}\nFinal: Computer hand: {computer_hand}\n\t   Player hand: {player_hand}")
+        if "You won" in result:
+            scores[1] += 1
+        elif "Computer wins" in result:
+            scores[0] += 1
+        new_game = show_scores(scores)
+    print("\nThanks for playing! Have a great day.")
+
+
+if __name__ == "__main__":
+    main()
